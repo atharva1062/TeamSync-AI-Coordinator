@@ -13,5 +13,5 @@ if (document.querySelector('[data-live-workspace]')) {
     } catch (_) { /* Keep the current board visible during network interruptions. */ }
   };
   poll();
-  setInterval(poll, 20000);
+  setInterval(poll, 10000);
 }
