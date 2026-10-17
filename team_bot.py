@@ -26,25 +26,38 @@ async def commands(update,context):
     if update.effective_chat.type!="private" or update.effective_chat.id!=update.effective_user.id: return
     path=context.bot_data["database_path"]
     members=members_for_chat(path,update.effective_chat.id)
-    command=update.effective_message.text.split()[0].split("@")[0].lower()
+    full_text=update.effective_message.text or ""
+    command=full_text.split()[0].split("@")[0].lower()
     try:
         if command=="/confirm":
             if len(members)!=1: raise ValueError("Use your project's private dashboard invitation to confirm assignments when you belong to several projects.")
             confirm(path,members[0]); answer="Your task assignments are confirmed. The leader can connect GitHub after everyone confirms."
-        else:
-            parts=update.effective_message.text.split(maxsplit=3 if command=="/progress" else 2)
+        elif command=="/progress":
+            parts=full_text.split(maxsplit=3)
+            if len(parts)!=4: raise ValueError("Use /progress TASK_ID PERCENT short explanation")
             task_id=int(parts[1])
             with connection(path) as conn:
                 row=conn.execute("SELECT m.* FROM members m JOIN tasks t ON t.member_id=m.id WHERE t.id=? AND m.telegram_chat_id=?",(task_id,update.effective_chat.id)).fetchone()
             if not row: raise ValueError("This task is not assigned to your linked account.")
             member=dict(row)
-            if command=="/progress":
-                if len(parts)!=4: raise ValueError("Use /progress TASK_ID PERCENT short explanation")
-                report_progress(path,member,task_id,int(parts[2]),parts[3]); answer=f"Task #{task_id}: saved your reported {parts[2]}% progress."
+            report_progress(path,member,task_id,int(parts[2]),parts[3]); answer=f"Task #{task_id}: saved your reported {parts[2]}% progress."
+        elif command=="/helpme":
+            from ai_help import answer_member_message, answer_unlinked_message
+            query=full_text.removeprefix(command).strip()
+            if not query:
+                answer="Ask any question, for example: /helpme how do I connect to MongoDB? or /helpme 1 my error message"
+            elif not members:
+                answer=await answer_unlinked_message(query)
             else:
-                if len(parts)!=3: raise ValueError("Use /helpme TASK_ID error or question")
-                from ai_help import help_member
-                answer=await help_member(path,member,task_id,parts[2])
+                member=members[0]
+                task_id=None
+                words=query.split(maxsplit=1)
+                if words and words[0].isdigit():
+                    task_id=int(words[0])
+                    query=words[1] if len(words)>1 else query
+                answer=await answer_member_message(path,member,query,task_id=task_id)
+        else:
+            answer="Available commands: /status, /risk, /confirm, /progress, /helpme, /update"
     except (ValueError,IndexError,RuntimeError) as exc:
-        answer=str(exc) if str(exc) and not isinstance(exc,IndexError) else "Use /helpme TASK_ID your error, or /progress TASK_ID PERCENT explanation."
+        answer=str(exc) if str(exc) and not isinstance(exc,IndexError) else "Please check your command format or ask your question directly."
     for chunk in message_chunks(answer): await update.effective_message.reply_text(chunk)

@@ -61,9 +61,10 @@ async def _dispatch(token, path, coordinator, data):
         .token(token)
         .build()
     )
+    from classifier import create_classifier
     application.bot_data["database_path"] = path
     application.bot_data["coordinator_chat_id"] = coordinator
-    application.bot_data["classifier"] = None  # AI classifier not needed for routing
+    application.bot_data["classifier"] = create_classifier()
 
     # Wire up the same handlers as bot.py.
     from bot import start, status, risk, handle_error
@@ -79,6 +80,12 @@ async def _dispatch(token, path, coordinator, data):
     await application.initialize()
     update = Update.de_json(data, application.bot)
     await application.process_update(update)
+    classifier = application.bot_data.get("classifier")
+    if classifier and hasattr(classifier, "close"):
+        try:
+            await classifier.close()
+        except Exception:
+            pass
     await application.shutdown()
 
 

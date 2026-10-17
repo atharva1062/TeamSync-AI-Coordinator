@@ -70,16 +70,16 @@ async def receive_reply(update, context) -> None:
     if message is None or not message.text:
         return
     if not is_private_owner(update):
-        await message.reply_text("Please send task updates in your private chat with this bot.")
+        await message.reply_text("Please send task updates and questions in your private chat with this bot.")
         return
     path = context.bot_data["database_path"]
     chat_id = update.effective_chat.id
-    task = None
-    text = message.text
-    if not text.strip():
-        await message.reply_text("Please send a text update about your task.")
+    text = message.text.strip()
+    if not text:
+        await message.reply_text("Please send a text message or question.")
         return
-    # Explicit task selection resubmits the full update, so ambiguity never loses evidence.
+
+    # 1. Explicit /update command
     if text.split(maxsplit=1)[0].split("@")[0].lower() == "/update":
         parts = text.split(maxsplit=2)
         task_number = parts[1].removeprefix("#") if len(parts) > 1 else ""
@@ -88,28 +88,39 @@ async def receive_reply(update, context) -> None:
             return
         task_id = int(task_number)
         task = next((t for t in list_tasks(path) if t["id"] == task_id and t["telegram_chat_id"] == chat_id), None)
-        text = parts[2]
-    elif message.reply_to_message is not None:
-        task = task_for_prompt(path, chat_id, message.reply_to_message.message_id)
-        # Unknown reply targets must never fall back to an arbitrary open task.
-    else:
-        tasks = [t for t in list_tasks(path) if t["telegram_chat_id"] == chat_id and t["status"] != "Complete"]
-        if len(tasks) > 1:
-            choices = "\n".join(f"#{t['id']} {t['title'][:150]}" for t in tasks)
-            for chunk in message_chunks(f"Which task is this about?\n{choices}\nResend as /update TASK_ID your full update."):
-                await message.reply_text(chunk)
+        if task is None:
+            await message.reply_text(f"Task #{task_id} not found under your linked account.")
             return
-        task = tasks[0] if tasks else None
-    if task is None:
-        await message.reply_text("I couldn't match this to your task. Reply to a task follow-up or use /update TASK_ID your update. Ask the coordinator to check your assignment if needed.")
+        if task["status"] == "Complete":
+            await message.reply_text(f"Task #{task['id']} is already complete.")
+            return
+        saved = record_reply(path, task["id"], chat_id, message.message_id, parts[2])
+        if not saved:
+            await message.reply_text("This update was already recorded. Use /status to check the board.")
+            return
+        from processing import process_reply
+        await process_reply(update, context, task, parts[2])
         return
-    if task["status"] == "Complete":
-        await message.reply_text(f"Task #{task['id']} is already complete. Ask the coordinator if it needs reopening.")
-        return
-    saved = record_reply(path, task["id"], chat_id, message.message_id, text)
-    if not saved:
-        await message.reply_text("This message was already collected, or the task assignment changed. Use /status to check the current board before resending.")
-        return
-    from processing import process_reply
 
-    await process_reply(update, context, task, text)
+    # 2. Reply to a specific bot follow-up prompt
+    if message.reply_to_message is not None:
+        task = task_for_prompt(path, chat_id, message.reply_to_message.message_id)
+        if task is not None and task["status"] != "Complete":
+            saved = record_reply(path, task["id"], chat_id, message.message_id, text)
+            if saved:
+                from processing import process_reply
+                await process_reply(update, context, task, text)
+                return
+
+    # 3. For ANY question, doubt, error, project inquiry, or general conversation:
+    from team_bot import members_for_chat
+    from ai_help import answer_member_message, answer_unlinked_message
+
+    members = members_for_chat(path, chat_id)
+    if members:
+        answer = await answer_member_message(path, members[0], text)
+    else:
+        answer = await answer_unlinked_message(text)
+
+    for chunk in message_chunks(answer):
+        await message.reply_text(chunk)
