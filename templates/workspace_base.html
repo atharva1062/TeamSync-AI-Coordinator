@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0a1020"><title>TeamSync AI Coordinator · Project workspace</title><link rel="stylesheet" href="{{ url_for('static',filename='workspace-modern.css') }}"><script src="{{ url_for('static',filename='workspace.js') }}" defer></script></head>
+<body>
+<header class="nav">
+  <a class="brand" href="/" aria-label="TeamSync AI Coordinator home"><span class="brand-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="m16 3 12 7-12 7L4 10l12-7Z" stroke="currentColor" stroke-width="2"/><path d="m4 16 12 7 12-7M4 22l12 7 12-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span class="brand-name">TeamSync<span class="brand-subtitle">AI COORDINATOR</span></span></a>
+  <nav aria-label="Main navigation"><a href="/workspace" {% if request.endpoint=='workspace_home' %}class="selected" aria-current="page"{% endif %}>Workspace</a><a href="/projects/new" {% if request.path=='/projects/new' %}class="selected" aria-current="page"{% endif %}>New project <span>↗</span></a><a href="/legacy">Original demo</a></nav>
+</header>
+<main>{% for message in get_flashed_messages() %}<div class="notice" role="status">{{ message }}</div>{% endfor %}{% block content %}{% endblock %}</main>
+<footer><span>TeamSync AI Coordinator</span><span>Built for teams that build together.</span></footer>
+</body></html>

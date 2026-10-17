@@ -1,0 +1,4 @@
+{% extends 'workspace_base.html' %}{% block content %}
+<section class="setup-intro"><div class="hero-label"><i></i> TEAMSYNC ADMINISTRATION</div><h1>A clear view.<br><span>Across every team.</span></h1><p>Manage your platform and keep repository verification ready for everyone.</p></section>
+<form class="panel setup-form join-form" action="/admin" method="post"><input type="hidden" name="csrf" value="{{ csrf }}"><div class="form-kicker"><span>ADMIN ACCESS</span><span>SECURE SIGN-IN</span></div><h2>Welcome back.</h2><label>Admin username<input name="username" required autocomplete="username" maxlength="80"></label><label class="top-space">Password<input name="password" type="password" required autocomplete="current-password" maxlength="1024"></label><button class="primary wide">Sign in to admin portal <span>↗</span></button><small class="footnote">Admin access is separate from team membership.</small></form>
+{% endblock %}

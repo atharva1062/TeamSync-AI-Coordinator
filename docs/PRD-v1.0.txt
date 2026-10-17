@@ -1,0 +1,190 @@
+PRD: AI Group Project Coordinator
+Sponsored by Worcflow | Version 1.0 | Status: Draft
+A Telegram bot that chases your teammates, understands their replies, and keeps the task board honest. It is a Python script plus SQLite, with no frontend framework and no build step.
+1. The Pitch
+Group projects stall because nobody wants to be the one who keeps chasing people, and boards only stay current if humans update them. This bot does the chasing and the updating, on a platform your team already uses.
+
+
+Product
+Telegram bot that follows up on tasks and updates a live board
+For
+College teams of 3 to 6 people, plus the coordinator who tracks them
+Core promise
+Reply in plain words (even Hinglish); the bot sorts it into progress, done, or blocked
+Killer detail
+"Connected, but waiting for test credentials" becomes Blocked, not Complete
+Build style
+One Python service, SQLite, Claude API. No Vite, React, or build step
+Sponsor
+Worcflow
+2. How It Works
+A reply never reaches the board directly. Claude classifies it first, and a blocker is saved with its reason.
+3. What the Bot Understands
+Every reply is sorted into one of four outcomes. The rule that earns the most marks: any open dependency means Blocked, even if work is done.
+Reply
+Status
+Blocker saved
+"Started on it"
+In Progress
+None
+"Done, merged to main"
+Complete
+Cleared
+"Connected, but waiting for test credentials"
+Blocked
+Waiting for test credentials
+"Haan ho gaya, bas review baaki hai"
+Blocked or In Progress (asks if unsure)
+Review pending
+"Will see"
+No change; bot asks one question
+None
+The LLM returns strict JSON that the code validates before touching the database:
+{
+  "status": "Blocked",
+  "blocker": "Waiting for test credentials",
+  "progress_note": "API connection done",
+  "confidence": 0.92
+}
+If confidence is under 0.6, the bot asks a clarifying question and leaves the record as it is.
+4. MVP Scope
+Build the must-haves first; they are the complete demo loop. Everything else is bonus.
+Priority
+Feature
+Why it matters
+Must
+Seeded task list: task, owner, Telegram chat ID, status, blocker
+Starting point the brief requires
+Must
+/followup sends a real Telegram message to each open task owner
+Live-integration rule
+Must
+Reply listener matches a reply to the owner's task
+Closes the loop
+Must
+Claude classifies reply into status plus blocker
+The "AI" judges look for
+Must
+Record update plus history log of every change
+Proof of status changes
+Must
+/status command returns the board in chat
+Latest status is visible
+Should
+Clarifying question on vague replies
+Quality of execution
+Should
+Simple read-only dashboard page
+Strong demo visual
+Could
+Daily scheduled check-ins and reminders
+Room to grow
+Could
+Risk report: "3 of 8 done, 2 blocked" plus lead alert on new blockers
+Creativity score
+Could
+Meeting slot finder from availability replies
+Room to grow
+Out of scope: multiple projects, login or roles, file uploads, voice, mobile app.
+5. Lean Tech Stack
+No Vite, no React, no npm, no build step. The whole project is one Python folder you can run with a single command.
+Layer
+Choice
+Why
+Messaging
+Telegram Bot API via python-telegram-bot
+Free bot from BotFather in 2 minutes
+Backend
+Single Python file (polling mode)
+No server or webhook setup
+AI
+Claude API, JSON-only prompt
+Handles mixed and Hinglish replies
+Storage
+SQLite (built into Python)
+No database server
+Board view
+/status command, plus Streamlit or one Flask page with plain HTML
+No frontend framework
+Scheduling
+APScheduler, or a manual /followup for the demo
+Optional reminders
+Config
+.env file for the bot token and API key
+Keeps secrets out of the repo
+Suggested repo layout: bot.py (Telegram handlers), classifier.py (LLM call), db.py (SQLite), seed.py (sample tasks), dashboard.py (optional), README.md.
+6. Data and Status Views
+Two SQLite tables hold everything: the current board and a full audit trail.
+Table
+Fields
+tasks
+id, title, owner_name, telegram_chat_id, status, blocker, last_followup_at, updated_at
+status_history
+id, task_id, old_status, new_status, blocker, raw_message, created_at
+Sample seed data for the demo:
+task,owner,status,blocker
+Connect the payment API,Kabir,Pending,
+Design the login page,Asha,In Progress,
+Write the report intro,Rohan,Pending,
+Prepare final slides,Meera,Pending,
+The board is visible three ways: the /status command in Telegram, a read-only dashboard page with color-coded rows, and a header line such as "4 tasks: 1 done, 1 in progress, 1 blocked, 1 pending".
+7. Edge Cases
+Handling these cleanly is what separates a demo from a product.
+Case
+Bot behavior
+Mixed reply ("done but waiting for X")
+Blocked, blocker recorded
+Vague reply ("will see")
+One clarifying question, no change
+Owner has several open tasks
+Asks which task the reply is about
+Hinglish or typos
+Interprets normally
+No reply after a set time
+Sends one reminder
+Unrelated chat
+Polite response, no update
+Blocker later resolved
+Reply moves status on and clears the blocker
+LLM or API error
+Keeps old status, logs error, tells the coordinator
+8. Build Plan
+Five phases, each ending with something you can show.
+1. Setup: create the bot with BotFather, seed SQLite, make /start and /status work.
+2. Messaging: /followup sends real messages; the reply handler receives them.
+3. Brain: add the Claude classifier and update records plus history.
+4. Polish: clarifying questions, dashboard page, error handling, test 20 sample replies.
+5. Demo prep: one stretch feature, real teammates, screenshots, README, rehearsal.
+9. Demo Script (5 minutes)
+1. Show the board (30s): four tasks, owners, statuses.
+2. Send follow-ups (60s): run /followup and show the real message landing on a teammate's phone.
+3. Live reply (60s): the teammate types "connected, but waiting for test credentials".
+4. Show the result (60s): task flips to Blocked with the blocker text, plus the history log row.
+5. Run /status (45s): show the updated board and the dashboard.
+6. Bonus (45s): a vague reply triggers a clarifying question, or show the risk report.
+Evidence to capture: screenshots of the task list before and after, the real Telegram chat, the blocker detection, and the history table.
+Backup plan: keep a recorded run, a second phone, and a mobile hotspot ready.
+10. Scoring, Risks and Open Decisions
+Judging criterion
+How this plan earns it
+Functional Completeness
+Full loop live: task, follow-up, reply, update, visible board
+Quality of Execution
+JSON validation, confidence threshold, audit log, edge cases
+Thought, Effort and Creativity
+Clarifying questions, Hinglish, risk report, scheduled check-ins
+Risk
+Mitigation
+Teammate does not reply in the demo
+Arrange repliers in advance; have a second phone
+LLM misreads a reply
+Few-shot examples, confidence threshold, clarifying question
+Wi-Fi or API outage
+Hotspot, early testing, recorded backup
+Leaked tokens
+.env file, never commit secrets
+Success target: at least 90% correct on 20 test replies, and zero blocker replies marked Complete.
+Open decisions:
+[ ] Telegram (recommended) or Slack?
+[ ] Board view as Streamlit page or Google Sheet?
+[ ] Include scheduled reminders in the demo?

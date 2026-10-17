@@ -1,0 +1,30 @@
+{% extends 'workspace_base.html' %}{% block content %}
+<section class="setup-intro">
+  <div class="hero-label"><i></i> YOUR NEXT BIG IDEA STARTS HERE</div>
+  <h1>Your team.<br><span>One clear direction.</span></h1>
+  <p>A shared plan. Real progress. An AI coordinator that keeps<br class="desktop-break"> everyone moving—without the endless follow-ups.</p>
+  <div class="steps" aria-label="Project setup steps"><span class="active"><b>01</b> Create a team</span><i aria-hidden="true">→</i><span><b>02</b> Join with code</span><i aria-hidden="true">→</i><span><b>03</b> Plan & confirm</span></div>
+</section>
+<div class="setup-grid">
+  <form class="panel setup-form" method="post" action="/projects">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="form-kicker"><span>CREATE A WORKSPACE</span><span>01 / 03</span></div>
+    <div class="section-title"><div><h2>Your next great project</h2><p>Give your project a name. We’ll bring the structure.</p></div><span class="title-icon" aria-hidden="true">↗</span></div>
+    <div class="two-col"><label>Project name<input name="name" placeholder="e.g. Campus Connect" required maxlength="120"></label><label>Team name<input name="team_name" placeholder="e.g. The Builders" required maxlength="120"></label></div>
+    <div class="divider"></div>
+    <div class="section-title team-title"><div><h2>You lead. Your team joins.</h2><p>Create the workspace, then share your team code.</p></div><span class="seat-pill">6 seats</span></div>
+    <label for="team-leader">Team leader</label><div class="input-wrap"><span class="input-icon" aria-hidden="true">✦</span><input id="team-leader" name="leader" placeholder="Leader’s full name" required maxlength="80"></div>
+    <label class="top-space">Total team size, including you<select name="team_size" required>{% for size in range(2,7) %}<option value="{{ size }}" {% if size==6 %}selected{% endif %}>{{ size }} people · you + {{ size-1 }} members</option>{% endfor %}</select></label>
+    <button class="primary wide">Continue & get team code <span aria-hidden="true">↗</span></button>
+    <small class="footnote">Members enter their own names when they join.</small>
+    <a class="join-option" href="/teams/join"><span class="join-option-icon" aria-hidden="true">↗</span><span><strong>Joining an existing team?</strong><small>Enter your team code to open your shared dashboard.</small></span><span class="join-option-action">Join with code</span></a>
+  </form>
+  <aside class="setup-aside">
+    <div class="dark-card"><span class="pill">THE BIG PICTURE</span><h2>Great teamwork.<br>Without the guesswork.</h2><p class="card-intro">Everything your team needs to move forward, connected in one workspace.</p>
+      <div class="connection-map" role="img" aria-label="TeamSync connects tasks, GitHub, Telegram, and AI help"><span class="map-line line-one"></span><span class="map-line line-two"></span><span class="map-node node-github"><b>⌘</b> GitHub</span><span class="map-node node-tasks"><b>▤</b> Tasks</span><span class="map-center"><b>✦ TeamSync</b><small>AI COORDINATOR</small></span><span class="map-node node-telegram"><b>↗</b> Telegram</span><span class="map-node node-help"><b>✧</b> AI help</span></div>
+      <div class="feature-list"><div><span class="feature-icon mint">✓</span><div><strong>A plan everyone agrees to</strong><p>Each person confirms their assigned work.</p></div></div><div><span class="feature-icon violet">⌘</span><div><strong>Your code, in the picture</strong><p>GitHub activity alongside real task progress.</p></div></div><div><span class="feature-icon blue">↗</span><div><strong>A daily nudge, handled</strong><p>Telegram check-ins at 9:00 PM India time.</p></div></div><div><span class="feature-icon peach">✧</span><div><strong>A little help when you’re stuck</strong><p>Work through errors with AI in your workspace.</p></div></div></div>
+    </div>
+    <div class="quiet-card"><span class="history-icon" aria-hidden="true">↶</span><div><strong>Your project has a memory.</strong><p>Updates, decisions, and AI conversations stay saved. Daily backups run with your bot.</p></div></div>
+  </aside>
+</div>
+{% endblock %}

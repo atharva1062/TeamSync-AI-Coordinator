@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TeamSync AI Coordinator · Project board</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="/" aria-label="TeamSync project board"><span class="brandmark">T</span> TEAMSYNC <span>/ PROJECT COORDINATOR</span></a><span class="readonly">Read-only board</span></header>
+  <main>
+    {% if simulated %}<p class="simulation-notice"><strong>Simulated rehearsal.</strong> Scripted Telegram and Claude responses; this board is not live integration evidence.</p>{% endif %}
+    <section class="intro">
+      <div><p class="eyebrow">TEAM WORKSPACE</p><h1>Progress, in plain sight.</h1><p class="subtitle">Every task, every teammate, every blocker. One shared view.</p></div>
+      <div class="refresh"><a class="button" href="{{ url_for('index', status=selected, q=query) }}">Refresh board <span aria-hidden="true">↻</span></a><small>Snapshot · {{ viewed_at }}</small></div>
+    </section>
+    <section class="overview" aria-label="Project summary">
+      <div class="completion"><p class="eyebrow">PROJECT PULSE</p><strong>{{ completion }}<span>%</span></strong><p>{{ counts['Complete'] }} of {{ total }} tasks complete</p><progress max="100" value="{{ completion }}" aria-label="Project completion">{{ completion }}%</progress></div>
+      <div class="metrics">
+        {% for label in ['Complete', 'In Progress', 'Blocked', 'Pending'] %}
+        <a class="metric {{ classes[label] }}" href="{{ url_for('index', status=label) }}"><span class="dot" aria-hidden="true"></span><span>{{ label }}</span><strong>{{ counts[label] }}</strong><small>View tasks <span aria-hidden="true">↗</span></small></a>
+        {% endfor %}
+      </div>
+    </section>
+    <div class="workspace">
+      <section class="panel board" aria-labelledby="tasks-heading">
+        <div class="panel-heading"><div><p class="eyebrow">THE WORK</p><h2 id="tasks-heading">Task board <span class="count">{{ total }}</span></h2></div><span class="muted">{{ tasks|length }} shown</span></div>
+        <form class="filters" method="get" action="{{ request.path }}">
+          <label><span class="sr-only">Search tasks, owners, or blockers</span><input type="search" name="q" value="{{ query }}" placeholder="Search tasks or teammates…" maxlength="200"></label>
+          <label><span class="sr-only">Filter by status</span><select name="status"><option value="">All statuses</option>{% for label in statuses %}<option value="{{ label }}" {% if selected == label %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+          <button class="button secondary" type="submit">Filter</button>{% if selected or query %}<a class="clear" href="/">Clear</a>{% endif %}
+        </form>
+        <div class="table-scroll"><table><caption class="sr-only">Project tasks with owners, status, and blockers</caption><thead><tr><th scope="col">Task / blocker</th><th scope="col">Owner</th><th scope="col">Status</th><th scope="col">Updated (UTC)</th></tr></thead><tbody>
+          {% for task in tasks %}<tr class="task-row {{ classes[task.status] }}"><td><span class="task-id">#{{ task.id }}</span><strong>{{ task.title }}</strong>{% if task.blocker %}<p class="blocker-note">{{ task.blocker }}</p>{% endif %}</td><td><span class="owner">{{ task.owner_name }}</span></td><td><span class="badge {{ classes[task.status] }}">{{ task.status }}</span></td><td class="timestamp">{{ task.updated_at|replace('T', ' ')|replace('Z', '') }}</td></tr>
+          {% else %}<tr><td colspan="4" class="empty">{% if total %}No tasks match these filters. <a href="/">Show all tasks</a>.{% else %}Your board is ready for its first tasks.{% endif %}</td></tr>{% endfor %}
+        </tbody></table></div>
+        <div class="panel-foot">Updates arrive through Telegram. Refresh to see the latest board.</div>
+      </section>
+      <aside class="panel blockers" aria-labelledby="blockers-heading"><div class="panel-heading"><div><p class="eyebrow">NEEDS ATTENTION</p><h2 id="blockers-heading">Open blockers</h2></div><span class="count">{{ blockers|length }}</span></div>
+        {% for task in blockers %}<article class="blocker-card"><span class="badge blocked">Blocked · #{{ task.id }}</span><h3>{{ task.title }}</h3><p>{{ task.blocker }}</p><small>{{ task.owner_name }}</small></article>{% else %}<div class="all-clear"><span aria-hidden="true">✓</span><h3>No blockers reported</h3><p>Nothing is marked blocked on the current board.</p></div>{% endfor %}
+      </aside>
+    </div>
+    <section class="panel activity" aria-labelledby="activity-heading"><div class="panel-heading"><div><p class="eyebrow">THE PAPER TRAIL</p><h2 id="activity-heading">Recent updates</h2></div><span class="muted">Latest 15 accepted updates</span></div>
+      {% for event in history %}<article class="event"><span class="event-dot {{ classes[event.new_status] }}" aria-hidden="true"></span><div><p><strong>{{ event.owner_name }}</strong> · {{ event.title }}</p><p class="transition">{{ event.old_status }} <span aria-hidden="true">→</span> <span class="badge {{ classes[event.new_status] }}">{{ event.new_status }}</span>{% if event.blocker %}<span class="event-blocker">{{ event.blocker }}</span>{% endif %}</p><details><summary>View reply evidence</summary><pre>{{ event.raw_message }}</pre></details></div><time class="timestamp" datetime="{{ event.created_at }}">{{ event.created_at|replace('T', ' ')|replace('Z', ' UTC') }}</time></article>{% else %}<p class="empty">No accepted updates yet. The first task update will appear here.</p>{% endfor %}
+    </section>
+    <footer>TeamSync AI Coordinator <span>All timestamps in UTC</span></footer>
+  </main>
+</body>
+</html>
