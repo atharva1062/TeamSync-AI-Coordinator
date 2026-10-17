@@ -10,8 +10,8 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 # On Vercel the filesystem is read-only except /tmp.
-# Point the database to /tmp so initialize() can create tables.
-os.environ.setdefault("DATABASE_PATH", "/tmp/coordinator.sqlite3")
+# Force the database path to /tmp so initialize() can create tables.
+os.environ["DATABASE_PATH"] = "/tmp/coordinator.sqlite3"
 
 from config import load_environment
 
