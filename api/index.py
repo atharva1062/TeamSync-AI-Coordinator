@@ -21,3 +21,25 @@ from dashboard import create_app
 
 # workspace=True enables the full project workspace (setup, join, tasks).
 app = create_app(workspace=True)
+
+
+@app.post("/api/bot")
+def bot_webhook():
+    """Handle Telegram webhook directly in the main serverless app."""
+    try:
+        from api.bot import _run, _dispatch
+        from config import bot_token, coordinator_chat_id, database_path
+        from flask import Response, request
+
+        data = request.get_json(force=True, silent=True) or {}
+        path = database_path()
+        token = bot_token()
+        coordinator = coordinator_chat_id()
+
+        _run(_dispatch(token, path, coordinator, data))
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception("Webhook processing failed")
+
+    return ("ok", 200)
+

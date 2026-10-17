@@ -134,6 +134,29 @@ def install(app):
             flash(str(exc))
         return redirect(url_for("workspace_home"))
 
+    @app.post("/workspace/telegram")
+    def link_telegram_route():
+        csrf(); person = actor()
+        member_id = int(request.form.get("member_id", person["id"]))
+        if person["role"] != "leader" and member_id != person["id"]:
+            abort(403)
+        chat_id_raw = request.form.get("chat_id", "").strip()
+        try:
+            chat_id = int(chat_id_raw)
+            if chat_id <= 0:
+                raise ValueError("Enter a positive private Telegram chat ID.")
+            with connection(path) as conn:
+                target = conn.execute("SELECT * FROM members WHERE id=? AND project_id=?", (member_id, person["project_id"])).fetchone()
+                if not target:
+                    raise ValueError("Member not found.")
+                conn.execute("UPDATE members SET telegram_chat_id=? WHERE id=?", (chat_id, member_id))
+                conn.execute("UPDATE tasks SET telegram_chat_id=? WHERE member_id=?", (chat_id, member_id))
+                event(conn, person["project_id"], member_id, "telegram_linked", f"{target['name']} linked Telegram (Chat ID {chat_id}).")
+            flash(f"Telegram Chat ID {chat_id} linked successfully!")
+        except ValueError as exc:
+            flash(str(exc) if str(exc) else "Enter a valid numeric Telegram Chat ID.")
+        return redirect(url_for("workspace_home"))
+
     @app.post("/workspace/progress")
     def progress():
         csrf()

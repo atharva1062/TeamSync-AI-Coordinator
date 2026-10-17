@@ -6,10 +6,6 @@
       "use": "@vercel/python"
     },
     {
-      "src": "api/bot.py",
-      "use": "@vercel/python"
-    },
-    {
       "src": "static/**",
       "use": "@vercel/static"
     }
@@ -18,10 +14,6 @@
     {
       "src": "/static/(.*)",
       "dest": "/static/$1"
-    },
-    {
-      "src": "/api/bot",
-      "dest": "/api/bot.py"
     },
     {
       "src": "/(.*)",
